@@ -356,6 +356,14 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
+app.get('/', (_req, res) => {
+  res.status(200).json({
+    service: 'In-House Goal Setting & Tracking Portal API',
+    status: 'running',
+    health: '/api/health',
+  });
+});
+
 app.post('/api/auth/login', (req, res) => {
   const { email, password } = req.body;
   const user = users.find((u) => u.email.toLowerCase() === String(email).toLowerCase());
@@ -1003,6 +1011,14 @@ app.get('/api/admin/reports/achievement.xlsx', authMiddleware, requireRole('admi
 app.get('/api/data/snapshot', authMiddleware, (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ message: 'Only admin can view full snapshot' });
   return res.json({ users, goals, checkIns, goalCycles, sharedGoals, auditLogs, notifications });
+});
+
+app.use((req, res) => {
+  res.status(404).json({
+    message: 'Route not found',
+    requestedPath: req.originalUrl,
+    health: '/api/health',
+  });
 });
 
 initializeDatabase()
