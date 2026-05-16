@@ -159,7 +159,7 @@ function LoginPage() {
           </ul>
         </div>
 
-        <p className="login-footer">Built for AtomQuest Hackathon 1.0</p>
+        <p className="login-footer">Built for AtomQuest Hackathon 1.0 @Dilip</p>
       </div>
     </div>
   );

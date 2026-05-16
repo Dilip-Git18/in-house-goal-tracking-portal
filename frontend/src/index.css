@@ -335,7 +335,7 @@ table {
 
 th,
 td {
-  padding: 12px 14px;
+  padding: 14px 18px;
   border-bottom: 1px solid rgba(217, 207, 192, 0.8);
   text-align: left;
   vertical-align: top;
@@ -352,7 +352,48 @@ th {
 }
 
 tbody tr:hover {
-  background: rgba(15, 118, 110, 0.03);
+  background: rgba(15, 118, 110, 0.035);
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(15,118,110,0.12), rgba(11,76,68,0.08));
+  color: var(--primary);
+  font-weight: 700;
+  margin-right: 10px;
+  border: 1px solid rgba(15,118,110,0.08);
+}
+
+.employee-cell {
+  display: flex;
+  align-items: center;
+}
+
+.table-compact th,
+.table-compact td {
+  padding: 10px 12px;
+}
+
+.tooltip {
+  position: relative;
+}
+
+.tooltip:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: -36px;
+  right: 0;
+  background: rgba(17,24,39,0.94);
+  color: #fff;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .preset-row,

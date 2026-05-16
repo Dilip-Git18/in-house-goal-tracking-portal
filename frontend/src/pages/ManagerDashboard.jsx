@@ -291,7 +291,12 @@ function ManagerDashboard() {
                 </tr>
               ) : submissions.map((goal) => (
                 <tr key={goal.goalId}>
-                  <td>{goal.employeeName || goal.employeeId}</td>
+                    <td>
+                      <div className="employee-cell">
+                        <div className="avatar">{(goal.employeeName || goal.employeeId || 'U').split(' ').map(s=>s[0]).slice(0,2).join('')}</div>
+                        <div>{goal.employeeName || goal.employeeId}</div>
+                      </div>
+                    </td>
                   <td>{goal.title}</td>
                   <td>{String(goal.target)}</td>
                   <td><span className="status-chip status-primary">{goal.weightage}%</span></td>
@@ -303,9 +308,9 @@ function ManagerDashboard() {
                       <button type="button" className="rework button-sm" onClick={() => openGoalModal(goal, 'rework')}>
                         Return Rework
                       </button>
-                      <button type="button" className="danger button-sm" onClick={() => openDeleteModal(goal)} aria-label="Remove pending goal">
-                        ✕
-                      </button>
+                        <button type="button" className="danger button-sm tooltip" onClick={() => openDeleteModal(goal)} aria-label="Remove pending goal" data-tip="Remove this pending goal">
+                          ✕
+                        </button>
                     </div>
                   </td>
 
