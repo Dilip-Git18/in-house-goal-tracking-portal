@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
+import Toast from '../components/Toast';
 
 const presets = [
   { label: 'Employee', email: 'employee@company.com', password: 'Pass@123' },
@@ -38,6 +39,12 @@ function LoginPage() {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  useEffect(() => {
+    if (!error) return undefined;
+    const timer = window.setTimeout(() => setError(''), 4000);
+    return () => window.clearTimeout(timer);
+  }, [error]);
+
   const onSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -63,14 +70,22 @@ function LoginPage() {
       <div className="orb orb-right" />
 
       <div className="panel login-panel">
-        <p className="kicker">Hackathon Build</p>
-        <h1>In-House Goal Setting & Tracking Portal</h1>
-        <p className="subtext">
-          A role-based portal for employee goal creation, manager approval, quarterly check-ins,
-          HR reporting, and audit tracking.
-        </p>
+        <div className="section-heading login-heading">
+          <p className="kicker">Hackathon Build</p>
+          <h1>In-House Goal Setting & Tracking Portal</h1>
+          <p className="subtext">
+            A role-based portal for employee goal creation, manager approval, quarterly check-ins,
+            HR reporting, and audit tracking.
+          </p>
+        </div>
 
         <div className="demo-badge">Demo Mode: Sample credentials provided</div>
+
+        {error ? (
+          <div className="toast-anchor">
+            <Toast tone="error" title="Sign-in failed" message={error} onClose={() => setError('')} />
+          </div>
+        ) : null}
 
         <div className="preset-row">
           {presets.map((preset) => (
@@ -129,8 +144,6 @@ function LoginPage() {
               </button>
             </div>
           </label>
-
-          {error ? <p className="error">{error}</p> : null}
 
           <button type="submit" className="primary" disabled={loading}>
             {loading ? 'Signing in...' : 'Login'}

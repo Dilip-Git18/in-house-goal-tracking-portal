@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
+import Toast from '../components/Toast';
 
 function ManagerDashboard() {
   const navigate = useNavigate();
@@ -10,8 +11,10 @@ function ManagerDashboard() {
   const [checkIns, setCheckIns] = useState([]);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
+    setLoading(true);
     try {
       const [goalRes, checkInRes] = await Promise.all([
         api.get('/manager/submissions'),
@@ -22,12 +25,25 @@ function ManagerDashboard() {
       setError('');
     } catch (err) {
       setError(err.response?.data?.message || 'Unable to load manager dashboard');
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (!message && !error) return undefined;
+    const timer = window.setTimeout(() => {
+      setMessage('');
+      setError('');
+    }, 4000);
+    return () => window.clearTimeout(timer);
+  }, [message, error]);
+
+  const badgeClass = (value) => `status-chip status-${String(value).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 
   const logout = () => {
     localStorage.clear();
@@ -77,10 +93,19 @@ function ManagerDashboard() {
       </header>
 
       {message ? <p className="ok">{message}</p> : null}
-      {error ? <p className="error">{error}</p> : null}
+      {message ? (
+        <div className="toast-anchor"><Toast tone="success" title="Success" message={message} onClose={() => setMessage('')} /></div>
+      ) : null}
+      {error ? (
+        <div className="toast-anchor"><Toast tone="error" title="Action failed" message={error} onClose={() => setError('')} /></div>
+      ) : null}
 
       <section className="panel">
-        <h3>Pending Goal Approvals</h3>
+        <div className="section-heading">
+          <p className="kicker">Approvals</p>
+          <h3>Pending Goal Approvals</h3>
+          <p className="section-help">Review submitted goals, adjust target or weightage, and approve or rework with a single action.</p>
+        </div>
         <div className="table-wrap">
           <table>
             <thead>
@@ -93,18 +118,31 @@ function ManagerDashboard() {
               </tr>
             </thead>
             <tbody>
-              {submissions.map((goal) => (
+              {loading ? (
+                <tr>
+                  <td colSpan="5"><div className="table-empty table-loading">Loading pending approvals...</div></td>
+                </tr>
+              ) : submissions.length === 0 ? (
+                <tr>
+                  <td colSpan="5">
+                    <div className="table-empty">
+                      <strong>No pending goals.</strong>
+                      <span>Once employees submit goals, they will appear here for review.</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : submissions.map((goal) => (
                 <tr key={goal.goalId}>
                   <td>{goal.employeeName || goal.employeeId}</td>
                   <td>{goal.title}</td>
                   <td>{String(goal.target)}</td>
-                  <td>{goal.weightage}%</td>
+                  <td><span className="status-chip status-primary">{goal.weightage}%</span></td>
                   <td>
                     <div className="action-row">
-                      <button type="button" className="approve" onClick={() => processGoal(goal.goalId, 'approve')}>
+                      <button type="button" className="approve button-sm" onClick={() => processGoal(goal.goalId, 'approve')}>
                         Approve
                       </button>
-                      <button type="button" className="rework" onClick={() => processGoal(goal.goalId, 'rework')}>
+                      <button type="button" className="rework button-sm" onClick={() => processGoal(goal.goalId, 'rework')}>
                         Return Rework
                       </button>
                     </div>
@@ -117,7 +155,11 @@ function ManagerDashboard() {
       </section>
 
       <section className="panel">
-        <h3>Quarterly Check-In Module</h3>
+        <div className="section-heading">
+          <p className="kicker">Check-Ins</p>
+          <h3>Quarterly Check-In Module</h3>
+          <p className="section-help">Compare planned target versus actual achievement and keep a clean, structured manager note.</p>
+        </div>
         <div className="table-wrap">
           <table>
             <thead>
@@ -133,17 +175,30 @@ function ManagerDashboard() {
               </tr>
             </thead>
             <tbody>
-              {checkIns.map((item) => (
+              {loading ? (
+                <tr>
+                  <td colSpan="8"><div className="table-empty table-loading">Loading check-ins...</div></td>
+                </tr>
+              ) : checkIns.length === 0 ? (
+                <tr>
+                  <td colSpan="8">
+                    <div className="table-empty">
+                      <strong>No check-ins available.</strong>
+                      <span>As employees submit quarterly updates, manager comments will appear here.</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : checkIns.map((item) => (
                 <tr key={item.checkInId}>
                   <td>{item.employeeName}</td>
                   <td>{item.goalTitle}</td>
                   <td>{item.quarter}</td>
                   <td>{item.plannedTarget}</td>
                   <td>{item.actualAchievement}</td>
-                  <td>{item.progressScore}%</td>
-                  <td>{item.status}</td>
+                  <td><span className="status-chip status-primary">{item.progressScore}%</span></td>
+                  <td><span className={badgeClass(item.status)}>{item.status}</span></td>
                   <td>
-                    <button type="button" className="ghost" onClick={() => addCheckInComment(item.checkInId)}>
+                    <button type="button" className="ghost button-sm" onClick={() => addCheckInComment(item.checkInId)}>
                       {item.managerComment ? 'Edit Comment' : 'Add Comment'}
                     </button>
                   </td>

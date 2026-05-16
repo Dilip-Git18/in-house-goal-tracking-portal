@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import api from '../api';
+import Toast from '../components/Toast';
 
 const statusColors = ['#0f766e', '#f59e0b', '#16a34a', '#b91c1c'];
 const cycleLabels = {
@@ -47,8 +48,10 @@ function AdminDashboard() {
   const [activeModal, setActiveModal] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
+    setLoading(true);
     try {
       const [dashRes, userRes, auditRes] = await Promise.all([
         api.get('/admin/dashboard'),
@@ -61,12 +64,23 @@ function AdminDashboard() {
       setError('');
     } catch (err) {
       setError(err.response?.data?.message || 'Unable to load admin dashboard');
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (!message && !error) return undefined;
+    const timer = window.setTimeout(() => {
+      setMessage('');
+      setError('');
+    }, 4000);
+    return () => window.clearTimeout(timer);
+  }, [message, error]);
 
   const logout = () => {
     localStorage.clear();
@@ -162,6 +176,9 @@ function AdminDashboard() {
 
   const getUserName = (userId) => users.find((item) => item.userId === userId)?.name || userId || '-';
 
+  const roleBadgeClass = (value) => `status-chip status-${String(value).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+  const entityBadgeClass = (value) => `status-chip status-entity-${String(value).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+
   const downloadReport = async (format) => {
     try {
       const endpoint =
@@ -208,7 +225,12 @@ function AdminDashboard() {
       </header>
 
       {message ? <p className="ok">{message}</p> : null}
-      {error ? <p className="error">{error}</p> : null}
+      {message ? (
+        <div className="toast-anchor"><Toast tone="success" title="Success" message={message} onClose={() => setMessage('')} /></div>
+      ) : null}
+      {error ? (
+        <div className="toast-anchor"><Toast tone="error" title="Action failed" message={error} onClose={() => setError('')} /></div>
+      ) : null}
 
       {activeModal === 'unlock' ? (
         <div className="modal-backdrop" onClick={closeModal} role="presentation">
@@ -353,7 +375,11 @@ function AdminDashboard() {
 
       <section className="panel">
         <div className="row-between">
-          <h3>Completion Dashboard</h3>
+          <div className="section-heading-inline">
+            <p className="kicker">Summary</p>
+            <h3>Completion Dashboard</h3>
+            <p className="section-help">Monitor adoption, approvals, and quarterly progress across the portal.</p>
+          </div>
           <div className="action-row">
             <button type="button" className="ghost" onClick={openUnlockModal}>Unlock Goal</button>
             <button type="button" className="ghost" onClick={openSharedModal}>Push Shared KPI</button>
@@ -383,7 +409,11 @@ function AdminDashboard() {
       </section>
 
       <section className="panel">
-        <h3>Goal Cycle</h3>
+        <div className="section-heading">
+          <p className="kicker">Cycle Setup</p>
+          <h3>Goal Cycle</h3>
+          <p className="section-help">The active cycle and review windows drive when employees can create goals and submit check-ins.</p>
+        </div>
         {dashboard?.currentCycle ? (
           <div className="cycle-grid">
             <article>
@@ -407,7 +437,11 @@ function AdminDashboard() {
 
       <section className="panel chart-grid">
         <div>
-          <h3>Goal Status Mix</h3>
+          <div className="section-heading">
+            <p className="kicker">Analytics</p>
+            <h3>Goal Status Mix</h3>
+            <p className="section-help">Approved, submitted, draft, and rework counts shown as a clean overview.</p>
+          </div>
           <div className="chart-box">
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
@@ -432,7 +466,11 @@ function AdminDashboard() {
         </div>
 
         <div>
-          <h3>Quarter Completion</h3>
+          <div className="section-heading">
+            <p className="kicker">Analytics</p>
+            <h3>Quarter Completion</h3>
+            <p className="section-help">Completed versus pending check-ins across Q1 to Q4.</p>
+          </div>
           <div className="chart-box">
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={dashboard?.quarterCompletion || []}>
@@ -454,7 +492,11 @@ function AdminDashboard() {
       </section>
 
       <section className="panel">
-        <h3>User Management</h3>
+        <div className="section-heading">
+          <p className="kicker">Users</p>
+          <h3>User Management</h3>
+          <p className="section-help">Create users, assign reporting lines, and review the current organization list.</p>
+        </div>
         <form className="grid-form two-col" onSubmit={createUser}>
           <label>
             Name
@@ -521,20 +563,33 @@ function AdminDashboard() {
               </tr>
             </thead>
             <tbody>
-              {users.map((item) => (
+              {loading ? (
+                <tr>
+                  <td colSpan="7"><div className="table-empty table-loading">Loading users...</div></td>
+                </tr>
+              ) : users.length === 0 ? (
+                <tr>
+                  <td colSpan="7">
+                    <div className="table-empty">
+                      <strong>No users found.</strong>
+                      <span>Create your first employee, manager, or admin account from the form above.</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : users.map((item) => (
                 <tr key={item.userId}>
                   <td>{item.name}</td>
                   <td>{item.email}</td>
-                  <td>{item.role}</td>
+                  <td><span className={roleBadgeClass(item.role)}>{item.role}</span></td>
                   <td>{item.department || '-'}</td>
                   <td>{getUserName(item.managerId)}</td>
-                  <td>{item.isActive ? 'Active' : 'Inactive'}</td>
+                  <td><span className={item.isActive ? 'status-chip status-active' : 'status-chip status-inactive'}>{item.isActive ? 'Active' : 'Inactive'}</span></td>
                   <td>
                     <div className="action-row">
-                      <button type="button" className="ghost" onClick={() => navigator.clipboard.writeText(item.email)}>
+                      <button type="button" className="ghost button-sm" onClick={() => navigator.clipboard.writeText(item.email)}>
                         Copy Email
                       </button>
-                      <button type="button" className="ghost" onClick={() => navigator.clipboard.writeText(item.userId)}>
+                      <button type="button" className="ghost button-sm" onClick={() => navigator.clipboard.writeText(item.userId)}>
                         Copy ID
                       </button>
                     </div>
@@ -547,7 +602,11 @@ function AdminDashboard() {
       </section>
 
       <section className="panel">
-        <h3>Reporting & Audit</h3>
+        <div className="section-heading">
+          <p className="kicker">Reports & Audit</p>
+          <h3>Reporting & Audit</h3>
+          <p className="section-help">Export achievement reports and review activity logs by entity type.</p>
+        </div>
         <div className="export-panel">
           <p className="export-help">
             Export achievement report with planned vs actual values for all submitted check-ins.
@@ -588,12 +647,25 @@ function AdminDashboard() {
               </tr>
             </thead>
             <tbody>
-              {filteredAuditLogs.slice(0, 20).map((log) => (
+              {loading ? (
+                <tr>
+                  <td colSpan="5"><div className="table-empty table-loading">Loading audit trail...</div></td>
+                </tr>
+              ) : filteredAuditLogs.length === 0 ? (
+                <tr>
+                  <td colSpan="5">
+                    <div className="table-empty">
+                      <strong>No audit entries for this filter.</strong>
+                      <span>Try another entity type or perform a tracked action.</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredAuditLogs.slice(0, 20).map((log) => (
                 <tr key={log.logId}>
                   <td>{new Date(log.timestamp).toLocaleString()}</td>
                   <td>{log.userId}</td>
                   <td>{log.action}</td>
-                  <td>{log.entityType}</td>
+                  <td><span className={entityBadgeClass(log.entityType)}>{log.entityType}</span></td>
                   <td>{log.remarks || '-'}</td>
                 </tr>
               ))}

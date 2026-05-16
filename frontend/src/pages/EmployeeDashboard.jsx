@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
+import Toast from '../components/Toast';
 
 const initialForm = {
   thrustArea: '',
@@ -22,6 +23,7 @@ function EmployeeDashboard() {
   const [checkIns, setCheckIns] = useState([]);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
   const [checkInForm, setCheckInForm] = useState({
     goalId: '',
     quarter: 'Q1',
@@ -31,6 +33,7 @@ function EmployeeDashboard() {
   });
 
   const loadData = async () => {
+    setLoading(true);
     try {
       const [goalRes, checkInRes] = await Promise.all([
         api.get('/employee/goals'),
@@ -42,6 +45,8 @@ function EmployeeDashboard() {
       setError('');
     } catch (err) {
       setError(err.response?.data?.message || 'Unable to load employee dashboard');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -49,10 +54,24 @@ function EmployeeDashboard() {
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (!message && !error) return undefined;
+    const timer = window.setTimeout(() => {
+      setMessage('');
+      setError('');
+    }, 4000);
+    return () => window.clearTimeout(timer);
+  }, [message, error]);
+
   const totalWeightage = useMemo(
     () => goals.reduce((sum, goal) => sum + Number(goal.weightage || 0), 0),
     [goals],
   );
+
+  const lockedGoals = goals.filter((goal) => goal.isLocked).length;
+  const openGoals = goals.length - lockedGoals;
+
+  const badgeClass = (value) => `status-chip status-${String(value).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 
   const logout = () => {
     localStorage.clear();
@@ -158,10 +177,45 @@ function EmployeeDashboard() {
       </header>
 
       {message ? <p className="ok">{message}</p> : null}
-      {error ? <p className="error">{error}</p> : null}
+      {message ? (
+        <div className="toast-anchor"><Toast tone="success" title="Success" message={message} onClose={() => setMessage('')} /></div>
+      ) : null}
+      {error ? (
+        <div className="toast-anchor"><Toast tone="error" title="Action failed" message={error} onClose={() => setError('')} /></div>
+      ) : null}
+
+      <section className="panel panel-compact">
+        <div className="section-heading">
+          <p className="kicker">Workspace Overview</p>
+          <h3>Employee activity at a glance</h3>
+          <p className="section-help">A concise view of draft goals, locked goals, and submitted quarterly updates.</p>
+        </div>
+        <div className="metrics-grid metrics-grid-compact">
+          <article>
+            <p>Total Goals</p>
+            <h4>{goals.length}</h4>
+          </article>
+          <article>
+            <p>Locked Goals</p>
+            <h4>{lockedGoals}</h4>
+          </article>
+          <article>
+            <p>Open Goals</p>
+            <h4>{openGoals}</h4>
+          </article>
+          <article>
+            <p>Check-Ins</p>
+            <h4>{checkIns.length}</h4>
+          </article>
+        </div>
+      </section>
 
       <section className="panel">
-        <h3>Create Goal</h3>
+        <div className="section-heading">
+          <p className="kicker">Goal Planning</p>
+          <h3>Create Goal</h3>
+          <p className="section-help">Use clear, measurable goals with balanced weightage across the goal sheet.</p>
+        </div>
         {!rules.canEditGoals ? <p className="error">{rules.goalSettingMessage}</p> : null}
         <form className="grid-form two-col" onSubmit={createGoal}>
           <label>
@@ -238,9 +292,13 @@ function EmployeeDashboard() {
       </section>
 
       <section className="panel">
-        <div className="row-between">
-          <h3>My Goals</h3>
-          <button className="primary" type="button" onClick={submitSheet} disabled={!rules.canEditGoals}>
+        <div className="section-heading section-heading-row">
+          <div>
+            <p className="kicker">Goal Sheet</p>
+            <h3>My Goals</h3>
+            <p className="section-help">Draft goals remain editable until submission and then lock after approval.</p>
+          </div>
+          <button className="primary button-lg" type="button" onClick={submitSheet} disabled={!rules.canEditGoals}>
             Submit Goal Sheet
           </button>
         </div>
@@ -263,18 +321,34 @@ function EmployeeDashboard() {
               </tr>
             </thead>
             <tbody>
-              {goals.map((goal) => (
+              {loading ? (
+                <tr>
+                  <td colSpan="8">
+                    <div className="table-empty table-loading">Loading goals and workflow status...</div>
+                  </td>
+                </tr>
+              ) : goals.length === 0 ? (
+                <tr>
+                  <td colSpan="8">
+                    <div className="table-empty">
+                      <strong>No goals yet.</strong>
+                      <span>Create your first draft goal to begin the cycle.</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                goals.map((goal) => (
                 <tr key={goal.goalId}>
                   <td>{goal.title}</td>
                   <td>{goal.uomType}</td>
                   <td>{goal.goalType}</td>
                   <td>{String(goal.target)}</td>
                   <td>{goal.weightage}%</td>
-                  <td>{goal.approvalStatus}</td>
-                  <td>{goal.isLocked ? 'Yes' : 'No'}</td>
+                  <td><span className={badgeClass(goal.approvalStatus)}>{goal.approvalStatus}</span></td>
+                  <td><span className={goal.isLocked ? 'status-chip status-locked' : 'status-chip status-open'}>{goal.isLocked ? 'Locked' : 'Open'}</span></td>
                   <td>
                     {!goal.isLocked ? (
-                      <button className="ghost" type="button" onClick={() => editGoal(goal)}>
+                      <button className="ghost button-sm" type="button" onClick={() => editGoal(goal)}>
                         {goal.isShared ? 'Edit Weightage' : 'Edit'}
                       </button>
                     ) : (
@@ -282,14 +356,18 @@ function EmployeeDashboard() {
                     )}
                   </td>
                 </tr>
-              ))}
+              ))) }
             </tbody>
           </table>
         </div>
       </section>
 
       <section className="panel">
-        <h3>Quarterly Achievement Update</h3>
+        <div className="section-heading">
+          <p className="kicker">Check-Ins</p>
+          <h3>Quarterly Achievement Update</h3>
+          <p className="section-help">Enter actuals during the quarter window and document brief review notes for your manager.</p>
+        </div>
         <form className="grid-form two-col" onSubmit={updateCheckIn}>
           <label>
             Goal
@@ -366,17 +444,33 @@ function EmployeeDashboard() {
               </tr>
             </thead>
             <tbody>
-              {checkIns.map((item) => (
+              {loading ? (
+                <tr>
+                  <td colSpan="7">
+                    <div className="table-empty table-loading">Loading check-ins...</div>
+                  </td>
+                </tr>
+              ) : checkIns.length === 0 ? (
+                <tr>
+                  <td colSpan="7">
+                    <div className="table-empty">
+                      <strong>No quarterly check-ins yet.</strong>
+                      <span>Submit a locked goal and add Q1 to Q4 updates when the window opens.</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                checkIns.map((item) => (
                 <tr key={item.checkInId}>
                   <td>{item.quarter}</td>
                   <td>{item.goalId.slice(0, 8)}</td>
                   <td>{item.plannedTarget}</td>
                   <td>{item.actualAchievement}</td>
-                  <td>{item.progressScore}%</td>
-                  <td>{item.status}</td>
+                  <td><span className="status-chip status-primary">{item.progressScore}%</span></td>
+                  <td><span className={badgeClass(item.status)}>{item.status}</span></td>
                   <td>{item.managerComment || '-'}</td>
                 </tr>
-              ))}
+              ))) }
             </tbody>
           </table>
         </div>
