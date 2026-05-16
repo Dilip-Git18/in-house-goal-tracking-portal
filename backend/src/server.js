@@ -22,14 +22,14 @@ const nowIso = () => new Date().toISOString();
 
 let users = [
   {
-    userId: 'emp_001',
-    name: 'Rahul Sharma',
-    email: 'employee@company.com',
+    userId: 'adm_001',
+    name: 'HR Admin',
+    email: 'admin@company.com',
     password: bcrypt.hashSync('Pass@123', 8),
-    role: 'employee',
-    department: 'Sales',
-    designation: 'Sales Executive',
-    managerId: 'mgr_001',
+    role: 'admin',
+    department: 'HR',
+    designation: 'HR Manager',
+    managerId: null,
     isActive: true,
     createdAt: nowIso(),
     updatedAt: nowIso(),
@@ -48,14 +48,53 @@ let users = [
     updatedAt: nowIso(),
   },
   {
-    userId: 'adm_001',
-    name: 'HR Admin',
-    email: 'admin@company.com',
+    userId: 'mgr_002',
+    name: 'Arjun Rao',
+    email: 'manager2@company.com',
     password: bcrypt.hashSync('Pass@123', 8),
-    role: 'admin',
-    department: 'HR',
-    designation: 'HR Manager',
+    role: 'manager',
+    department: 'Operations',
+    designation: 'Operations Manager',
     managerId: null,
+    isActive: true,
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  },
+  {
+    userId: 'emp_001',
+    name: 'Rahul Sharma',
+    email: 'employee@company.com',
+    password: bcrypt.hashSync('Pass@123', 8),
+    role: 'employee',
+    department: 'Sales',
+    designation: 'Sales Executive',
+    managerId: 'mgr_001',
+    isActive: true,
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  },
+  {
+    userId: 'emp_002',
+    name: 'Dilip Kumar',
+    email: 'dilip@company.com',
+    password: bcrypt.hashSync('Pass@123', 8),
+    role: 'employee',
+    department: 'Operations',
+    designation: 'Program Associate',
+    managerId: 'mgr_002',
+    isActive: true,
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  },
+  {
+    userId: 'emp_003',
+    name: 'Neha Verma',
+    email: 'employee2@company.com',
+    password: bcrypt.hashSync('Pass@123', 8),
+    role: 'employee',
+    department: 'Support',
+    designation: 'Support Specialist',
+    managerId: 'mgr_001',
     isActive: true,
     createdAt: nowIso(),
     updatedAt: nowIso(),
@@ -93,12 +132,12 @@ let goals = [
     goalType: 'Min',
     target: 500000,
     weightage: 40,
-    approvalStatus: 'submitted',
-    isLocked: false,
+    approvalStatus: 'approved',
+    isLocked: true,
     isShared: false,
     sharedGoalId: null,
     primaryOwnerId: 'emp_001',
-    managerComment: '',
+    managerComment: 'Approved',
     createdAt: nowIso(),
     updatedAt: nowIso(),
   },
@@ -123,12 +162,163 @@ let goals = [
     createdAt: nowIso(),
     updatedAt: nowIso(),
   },
+  {
+    goalId: 'goal_003',
+    employeeId: 'emp_001',
+    managerId: 'mgr_001',
+    cycleId: 'cycle_2026',
+    thrustArea: 'Pipeline',
+    title: 'Improve conversion rate',
+    description: 'Raise lead to closure conversion ratio',
+    uomType: 'Percentage',
+    goalType: 'Min',
+    target: 22,
+    weightage: 30,
+    approvalStatus: 'submitted',
+    isLocked: false,
+    isShared: false,
+    sharedGoalId: null,
+    primaryOwnerId: 'emp_001',
+    managerComment: '',
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  },
+  {
+    goalId: 'goal_004',
+    employeeId: 'emp_002',
+    managerId: 'mgr_002',
+    cycleId: 'cycle_2026',
+    thrustArea: 'Automation',
+    title: 'Automate weekly project status reporting',
+    description: 'Reduce manual consolidation effort for PMO reporting',
+    uomType: 'Timeline',
+    goalType: 'Timeline',
+    target: '2026-09-30',
+    weightage: 50,
+    approvalStatus: 'approved',
+    isLocked: true,
+    isShared: false,
+    sharedGoalId: null,
+    primaryOwnerId: 'emp_002',
+    managerComment: 'Approved for Q2 milestone',
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  },
+  {
+    goalId: 'goal_005',
+    employeeId: 'emp_002',
+    managerId: 'mgr_002',
+    cycleId: 'cycle_2026',
+    thrustArea: 'Quality',
+    title: 'Zero major production incidents',
+    description: 'Keep major incidents at zero for critical workflows',
+    uomType: 'Zero-based',
+    goalType: 'Zero',
+    target: 0,
+    weightage: 50,
+    approvalStatus: 'approved',
+    isLocked: true,
+    isShared: false,
+    sharedGoalId: null,
+    primaryOwnerId: 'emp_002',
+    managerComment: 'Approved',
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  },
 ];
 
-let checkIns = [];
-let sharedGoals = [];
-let notifications = [];
-let auditLogs = [];
+let checkIns = [
+  {
+    checkInId: 'check_001',
+    goalId: 'goal_001',
+    employeeId: 'emp_001',
+    managerId: 'mgr_001',
+    quarter: 'Q1',
+    plannedTarget: 500000,
+    actualAchievement: 420000,
+    progressScore: 84,
+    status: 'On Track',
+    employeeComment: 'Need stronger lead conversion in next cycle.',
+    managerComment: 'Good momentum. Push enterprise accounts.',
+    submittedAt: nowIso(),
+    reviewedAt: nowIso(),
+    createdAt: nowIso(),
+  },
+  {
+    checkInId: 'check_002',
+    goalId: 'goal_004',
+    employeeId: 'emp_002',
+    managerId: 'mgr_002',
+    quarter: 'Q1',
+    plannedTarget: '2026-09-30',
+    actualAchievement: 1,
+    progressScore: 100,
+    status: 'On Track',
+    employeeComment: 'Design and implementation started.',
+    managerComment: 'Good progress, continue execution.',
+    submittedAt: nowIso(),
+    reviewedAt: nowIso(),
+    createdAt: nowIso(),
+  },
+];
+
+let sharedGoals = [
+  {
+    sharedGoalId: 'shared_001',
+    title: 'Improve customer satisfaction score',
+    description: 'Increase CSAT score for customer-facing teams',
+    thrustArea: 'Customer Experience',
+    target: 90,
+    uomType: 'Percentage',
+    goalType: 'Min',
+    department: 'Support',
+    assignedEmployees: ['emp_001', 'emp_003'],
+    primaryOwnerId: 'emp_003',
+    createdBy: 'mgr_001',
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  },
+];
+
+let notifications = [
+  {
+    notificationId: 'notif_001',
+    recipientId: 'mgr_001',
+    title: 'Goal Sheet Submitted',
+    message: 'Rahul Sharma has submitted goals for approval',
+    type: 'goal_submission',
+    isRead: false,
+    createdAt: nowIso(),
+    relatedEntityId: 'goal_002',
+  },
+];
+
+let auditLogs = [
+  {
+    logId: 'audit_001',
+    userId: 'mgr_001',
+    role: 'manager',
+    action: 'Goal approved',
+    entityType: 'Goal',
+    entityId: 'goal_001',
+    oldValue: { approvalStatus: 'submitted', isLocked: false },
+    newValue: { approvalStatus: 'approved', isLocked: true },
+    timestamp: nowIso(),
+    remarks: 'Approved after review.',
+  },
+  {
+    logId: 'audit_002',
+    userId: 'adm_001',
+    role: 'admin',
+    action: 'Database reseeded',
+    entityType: 'System',
+    entityId: 'seed_2026_05',
+    oldValue: {},
+    newValue: { users: 6, goals: 5, checkIns: 2 },
+    timestamp: nowIso(),
+    remarks: 'Initial demo data reset and seeded.',
+  },
+];
 
 const flexibleSchema = new mongoose.Schema({}, { strict: false, versionKey: false });
 const UserModel = mongoose.model('users', flexibleSchema, 'users');
@@ -266,6 +456,135 @@ function addAuditLog({ userId, role, action, entityType, entityId, oldValue, new
     remarks: remarks || '',
   });
   scheduleSync();
+}
+
+function addNotification({ recipientId = null, recipientRole = null, title, message, type = 'info', relatedEntityId = null, createdBy = null }) {
+  const notification = {
+    notificationId: uuidv4(),
+    recipientId,
+    recipientRole,
+    title,
+    message,
+    type,
+    relatedEntityId,
+    createdBy,
+    isRead: false,
+    createdAt: nowIso(),
+  };
+
+  notifications.unshift(notification);
+  scheduleSync();
+  return notification;
+}
+
+function getUserById(userId) {
+  return users.find((user) => user.userId === userId);
+}
+
+function buildDepartmentCompletion() {
+  const departments = [...new Set(users.filter((user) => user.role === 'employee').map((user) => user.department || 'Unassigned'))];
+
+  return departments.map((department) => {
+    const departmentEmployees = users.filter((user) => user.role === 'employee' && (user.department || 'Unassigned') === department);
+    const departmentGoals = goals.filter((goal) => departmentEmployees.some((employee) => employee.userId === goal.employeeId));
+    const completedGoals = departmentGoals.filter((goal) => goal.approvalStatus === 'approved').length;
+
+    return {
+      department,
+      totalGoals: departmentGoals.length,
+      completedGoals,
+      completionRate: departmentGoals.length > 0 ? Number(((completedGoals / departmentGoals.length) * 100).toFixed(2)) : 0,
+    };
+  });
+}
+
+function buildQuarterTrend() {
+  return ['Q1', 'Q2', 'Q3', 'Q4'].map((quarter) => {
+    const quarterCheckIns = checkIns.filter((item) => item.quarter === quarter);
+    const averageProgress = quarterCheckIns.length
+      ? Number((quarterCheckIns.reduce((sum, item) => sum + Number(item.progressScore || 0), 0) / quarterCheckIns.length).toFixed(2))
+      : 0;
+
+    return {
+      quarter,
+      averageProgress,
+      totalCheckIns: quarterCheckIns.length,
+    };
+  });
+}
+
+function buildManagerCompletionRates() {
+  return users
+    .filter((user) => user.role === 'manager')
+    .map((manager) => {
+      const managerGoals = goals.filter((goal) => goal.managerId === manager.userId && goal.approvalStatus === 'approved');
+      const managerCheckIns = checkIns.filter((item) => item.managerId === manager.userId);
+
+      return {
+        managerId: manager.userId,
+        managerName: manager.name,
+        completedCheckIns: managerCheckIns.length,
+        approvedGoals: managerGoals.length,
+        completionRate: managerGoals.length > 0 ? Number(((managerCheckIns.length / managerGoals.length) * 100).toFixed(2)) : 0,
+      };
+    });
+}
+
+function buildThrustAreaDistribution() {
+  const counts = goals.reduce((accumulator, goal) => {
+    const key = goal.thrustArea || 'Unspecified';
+    accumulator[key] = (accumulator[key] || 0) + 1;
+    return accumulator;
+  }, {});
+
+  return Object.entries(counts)
+    .map(([name, value]) => ({ name, value }))
+    .sort((left, right) => right.value - left.value);
+}
+
+function buildEscalationQueues() {
+  const pendingGoalSubmissions = goals
+    .filter((goal) => goal.approvalStatus === 'draft')
+    .map((goal) => ({
+      id: goal.goalId,
+      title: goal.title,
+      employeeName: getUserById(goal.employeeId)?.name || goal.employeeId,
+      managerName: getUserById(goal.managerId)?.name || goal.managerId || '-',
+      type: 'goal-submission',
+    }));
+
+  const pendingManagerApprovals = goals
+    .filter((goal) => goal.approvalStatus === 'submitted')
+    .map((goal) => ({
+      id: goal.goalId,
+      title: goal.title,
+      employeeName: getUserById(goal.employeeId)?.name || goal.employeeId,
+      managerName: getUserById(goal.managerId)?.name || goal.managerId || '-',
+      type: 'manager-approval',
+    }));
+
+  const pendingQuarterlyCheckIns = goals
+    .filter((goal) => goal.approvalStatus === 'approved' && goal.isLocked)
+    .map((goal) => {
+      const submittedQuarters = checkIns.filter((item) => item.goalId === goal.goalId).map((item) => item.quarter);
+      const remainingQuarters = ['Q1', 'Q2', 'Q3', 'Q4'].filter((quarter) => !submittedQuarters.includes(quarter));
+
+      return {
+        id: goal.goalId,
+        title: goal.title,
+        employeeName: getUserById(goal.employeeId)?.name || goal.employeeId,
+        managerName: getUserById(goal.managerId)?.name || goal.managerId || '-',
+        remainingQuarters,
+        type: 'quarterly-checkin',
+      };
+    })
+    .filter((item) => item.remainingQuarters.length > 0);
+
+  return {
+    pendingGoalSubmissions,
+    pendingManagerApprovals,
+    pendingQuarterlyCheckIns,
+  };
 }
 
 function checkWeightageRules(employeeId, cycleId, incoming = []) {
@@ -560,15 +879,13 @@ app.post('/api/employee/goals/submit', authMiddleware, requireRole('employee'), 
   });
 
   const manager = users.find((u) => u.userId === req.user.userId)?.managerId;
-  notifications.unshift({
-    notificationId: uuidv4(),
+  addNotification({
     recipientId: manager,
-    title: 'Goal Sheet Submitted',
-    message: `${req.user.name} has submitted goals for approval`,
+    title: 'Goal sheet submitted',
+    message: `${req.user.name} submitted a goal sheet for approval`,
     type: 'goal_submission',
-    isRead: false,
-    createdAt: nowIso(),
     relatedEntityId: userGoals[0]?.goalId || null,
+    createdBy: req.user.userId,
   });
 
   addAuditLog({
@@ -680,6 +997,10 @@ app.patch('/api/manager/goals/:goalId', authMiddleware, requireRole('manager'), 
 
   const before = { ...goal };
 
+  if (action === 'rework' && !String(managerComment || '').trim()) {
+    return res.status(400).json({ message: 'A rework comment is required' });
+  }
+
   if (target !== undefined) goal.target = target;
   if (weightage !== undefined) {
     const nextWeightage = Number(weightage);
@@ -707,9 +1028,25 @@ app.patch('/api/manager/goals/:goalId', authMiddleware, requireRole('manager'), 
   if (action === 'approve') {
     goal.approvalStatus = 'approved';
     goal.isLocked = true;
+    addNotification({
+      recipientId: goal.employeeId,
+      title: 'Goal approved successfully',
+      message: `${goal.title} was approved by ${req.user.name}`,
+      type: 'goal_approved',
+      relatedEntityId: goal.goalId,
+      createdBy: req.user.userId,
+    });
   } else if (action === 'rework') {
     goal.approvalStatus = 'rework';
     goal.isLocked = false;
+    addNotification({
+      recipientId: goal.employeeId,
+      title: 'Returned for rework',
+      message: `${goal.title} was returned with manager feedback`,
+      type: 'goal_rework',
+      relatedEntityId: goal.goalId,
+      createdBy: req.user.userId,
+    });
   }
 
   goal.updatedAt = nowIso();
@@ -728,15 +1065,49 @@ app.patch('/api/manager/goals/:goalId', authMiddleware, requireRole('manager'), 
   return res.json({ goal });
 });
 
+// Allow manager to remove a pending submitted goal from their approvals list
+app.delete('/api/manager/goals/:goalId', authMiddleware, requireRole('manager'), (req, res) => {
+  const { goalId } = req.params;
+  const index = goals.findIndex((g) => g.goalId === goalId && g.managerId === req.user.userId && g.approvalStatus === 'submitted');
+  if (index === -1) return res.status(404).json({ message: 'Pending goal not found or cannot be deleted' });
+
+  const [removed] = goals.splice(index, 1);
+
+  addAuditLog({
+    userId: req.user.userId,
+    role: req.user.role,
+    action: 'Pending goal removed by manager',
+    entityType: 'Goal',
+    entityId: removed.goalId,
+    oldValue: removed,
+    newValue: {},
+    remarks: 'Manager removed submitted goal from approvals',
+  });
+
+  addNotification({
+    recipientId: removed.employeeId,
+    title: 'Goal removed by manager',
+    message: `${removed.title} was removed from submissions by your manager`,
+    type: 'goal_removed',
+    relatedEntityId: removed.goalId,
+    createdBy: req.user.userId,
+  });
+
+  return res.json({ message: 'Pending goal removed' });
+});
+
 app.get('/api/manager/checkins', authMiddleware, requireRole('manager'), (req, res) => {
-  const teamCheckIns = checkIns.filter((c) => c.managerId === req.user.userId);
+  // Include check-ins for all employees who report to this manager, even if managerId wasn't set on the check-in
+  const teamEmployees = users.filter((u) => u.managerId === req.user.userId).map((u) => u.userId);
+  const teamCheckIns = checkIns.filter((c) => c.managerId === req.user.userId || teamEmployees.includes(c.employeeId));
+
   const enriched = teamCheckIns.map((c) => {
     const emp = users.find((u) => u.userId === c.employeeId);
     const goal = goals.find((g) => g.goalId === c.goalId);
     return {
       ...c,
-      employeeName: emp?.name || 'Unknown',
-      goalTitle: goal?.title || 'Unknown',
+      employeeName: emp?.name || c.employeeId || 'Unknown',
+      goalTitle: goal?.title || c.goalId || 'Unknown',
     };
   });
 
@@ -763,6 +1134,15 @@ app.post('/api/manager/checkins/:checkInId/comment', authMiddleware, requireRole
     oldValue: before,
     newValue: checkIn,
     remarks: 'Structured check-in feedback logged',
+  });
+
+  addNotification({
+    recipientId: checkIn.employeeId,
+    title: 'Check-in comment saved',
+    message: `Manager feedback was added for ${checkIn.goalId.slice(0, 8)}`,
+    type: 'checkin_comment',
+    relatedEntityId: checkIn.checkInId,
+    createdBy: req.user.userId,
   });
 
   return res.json({ checkIn });
@@ -792,6 +1172,15 @@ app.get('/api/admin/dashboard', authMiddleware, requireRole('admin'), (_req, res
     { draft: 0, submitted: 0, approved: 0, rework: 0 },
   );
 
+  const bonusAnalytics = {
+    departmentCompletion: buildDepartmentCompletion(),
+    quarterTrend: buildQuarterTrend(),
+    managerCompletionRates: buildManagerCompletionRates(),
+    thrustAreaDistribution: buildThrustAreaDistribution(),
+  };
+
+  const escalationQueues = buildEscalationQueues();
+
   res.json({
     metrics: {
       totalEmployees,
@@ -804,6 +1193,8 @@ app.get('/api/admin/dashboard', authMiddleware, requireRole('admin'), (_req, res
     quarterCompletion,
     currentCycle: cycle,
     recentAuditLogs: auditLogs.slice(0, 20),
+    bonusAnalytics,
+    escalationQueues,
   });
 });
 
@@ -827,6 +1218,15 @@ app.post('/api/admin/goals/:goalId/unlock', authMiddleware, requireRole('admin')
     oldValue: before,
     newValue: goal,
     remarks: remarks || 'Unlocked for exception handling',
+  });
+
+  addNotification({
+    recipientId: goal.employeeId,
+    title: 'Goal unlocked by admin',
+    message: `${goal.title} is now editable again`,
+    type: 'goal_unlocked',
+    relatedEntityId: goal.goalId,
+    createdBy: req.user.userId,
   });
 
   return res.json({ goal });
@@ -893,6 +1293,15 @@ app.post('/api/admin/shared-goals/push', authMiddleware, requireRole('admin', 'm
       updatedAt: nowIso(),
     };
     goals.push(employeeGoal);
+
+    addNotification({
+      recipientId: employeeId,
+      title: 'Shared KPI assigned',
+      message: `${title} was assigned by leadership`,
+      type: 'shared_goal',
+      relatedEntityId: sharedGoal.sharedGoalId,
+      createdBy: req.user.userId,
+    });
   });
 
   addAuditLog({
@@ -909,6 +1318,119 @@ app.post('/api/admin/shared-goals/push', authMiddleware, requireRole('admin', 'm
   return res.status(201).json({ sharedGoal });
 });
 
+app.post('/api/admin/escalations/:type/:itemId/:action', authMiddleware, requireRole('admin'), (req, res) => {
+  const { type, itemId, action } = req.params;
+  const { remarks } = req.body;
+  const actionLabel = action.replace(/-/g, ' ');
+
+  const payloadByType = {
+    'goal-submission': () => {
+      const goal = goals.find((item) => item.goalId === itemId);
+      if (!goal) return null;
+      return {
+        recipientId: goal.employeeId,
+        summary: `${goal.title} requires attention`,
+        entityType: 'Goal',
+        entityId: goal.goalId,
+        description: `${getUserById(goal.employeeId)?.name || goal.employeeId} should review the draft goal`,
+      };
+    },
+    'manager-approval': () => {
+      const goal = goals.find((item) => item.goalId === itemId);
+      if (!goal) return null;
+      return {
+        recipientId: goal.managerId,
+        summary: `${goal.title} is waiting for manager approval`,
+        entityType: 'Goal',
+        entityId: goal.goalId,
+        description: `${getUserById(goal.managerId)?.name || goal.managerId || 'Manager'} should review the submission`,
+      };
+    },
+    'quarterly-checkin': () => {
+      const goal = goals.find((item) => item.goalId === itemId);
+      if (!goal) return null;
+      const missingQuarters = ['Q1', 'Q2', 'Q3', 'Q4'].filter((quarter) => !checkIns.some((item) => item.goalId === itemId && item.quarter === quarter));
+      return {
+        recipientId: goal.employeeId,
+        summary: `${goal.title} has pending quarterly updates`,
+        entityType: 'CheckIn',
+        entityId: goal.goalId,
+        description: missingQuarters.length > 0 ? `Missing updates for ${missingQuarters.join(', ')}` : 'All quarterly updates are complete',
+      };
+    },
+  };
+
+  const payloadFactory = payloadByType[type];
+  if (!payloadFactory) {
+    return res.status(400).json({ message: 'Invalid escalation type' });
+  }
+
+  const payload = payloadFactory();
+  if (!payload) return res.status(404).json({ message: 'Related item not found' });
+
+  addNotification({
+    recipientId: payload.recipientId,
+    recipientRole: 'admin',
+    title: action === 'mark-resolved' ? 'Item marked resolved' : action === 'escalate-hr' ? 'Escalated to HR' : 'Reminder sent',
+    message: `${payload.summary}. ${payload.description}`,
+    type: action === 'escalate-hr' ? 'escalation' : 'reminder',
+    relatedEntityId: payload.entityId,
+    createdBy: req.user.userId,
+  });
+
+  addAuditLog({
+    userId: req.user.userId,
+    role: req.user.role,
+    action: `Escalation ${actionLabel}`,
+    entityType: payload.entityType,
+    entityId: payload.entityId,
+    oldValue: {},
+    newValue: { type, action, remarks: remarks || '' },
+    remarks: remarks || `${actionLabel} created for ${type}`,
+  });
+
+  return res.json({
+    message:
+      action === 'mark-resolved'
+        ? 'Escalation marked resolved'
+        : action === 'escalate-hr'
+          ? 'Escalated to HR'
+          : 'Reminder sent',
+  });
+});
+
+app.get('/api/notifications', authMiddleware, (req, res) => {
+  const visibleNotifications = notifications.filter((notification) => {
+    return (
+      notification.recipientId === req.user.userId ||
+      notification.recipientRole === req.user.role ||
+      notification.recipientRole === 'all'
+    );
+  });
+
+  return res.json({ notifications: visibleNotifications });
+});
+
+app.patch('/api/notifications/:notificationId/read', authMiddleware, (req, res) => {
+  const { notificationId } = req.params;
+  const notification = notifications.find((item) => item.notificationId === notificationId);
+
+  if (!notification) return res.status(404).json({ message: 'Notification not found' });
+  if (
+    notification.recipientId !== req.user.userId &&
+    notification.recipientRole !== req.user.role &&
+    notification.recipientRole !== 'all'
+  ) {
+    return res.status(403).json({ message: 'You cannot update this notification' });
+  }
+
+  notification.isRead = true;
+  notification.readAt = nowIso();
+  scheduleSync();
+
+  return res.json({ notification });
+});
+
 app.get('/api/admin/audit-logs', authMiddleware, requireRole('admin'), (_req, res) => {
   return res.json({ auditLogs });
 });
@@ -920,8 +1442,8 @@ app.get('/api/admin/users', authMiddleware, requireRole('admin'), (_req, res) =>
 app.post('/api/admin/users', authMiddleware, requireRole('admin'), (req, res) => {
   const { name, email, password, role, department, designation, managerId } = req.body;
 
-  if (!name || !email || !password || !role) {
-    return res.status(400).json({ message: 'name, email, password and role are required' });
+  if (!name || !email || !role) {
+    return res.status(400).json({ message: 'name, email and role are required' });
   }
 
   if (users.some((u) => u.email.toLowerCase() === email.toLowerCase())) {
@@ -932,7 +1454,7 @@ app.post('/api/admin/users', authMiddleware, requireRole('admin'), (req, res) =>
     userId: uuidv4(),
     name,
     email,
-    password: bcrypt.hashSync(password, 8),
+    password: bcrypt.hashSync(password || 'Pass@123', 8),
     role,
     department: department || '',
     designation: designation || '',

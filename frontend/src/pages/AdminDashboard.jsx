@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import api from '../api';
+import NotificationCenter from '../components/NotificationCenter';
 import Toast from '../components/Toast';
 
 const statusColors = ['#0f766e', '#f59e0b', '#16a34a', '#b91c1c'];
@@ -179,6 +180,38 @@ function AdminDashboard() {
   const roleBadgeClass = (value) => `status-chip status-${String(value).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
   const entityBadgeClass = (value) => `status-chip status-entity-${String(value).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 
+  const departmentCompletionData = dashboard?.bonusAnalytics?.departmentCompletion || [];
+  const quarterTrendData = dashboard?.bonusAnalytics?.quarterTrend || [];
+  const managerCompletionData = dashboard?.bonusAnalytics?.managerCompletionRates || [];
+  const thrustAreaData = dashboard?.bonusAnalytics?.thrustAreaDistribution || [];
+  const escalationQueues = dashboard?.escalationQueues || {
+    pendingGoalSubmissions: [],
+    pendingManagerApprovals: [],
+    pendingQuarterlyCheckIns: [],
+  };
+
+  const averageDepartmentRate = departmentCompletionData.length
+    ? Number((departmentCompletionData.reduce((sum, item) => sum + Number(item.completionRate || 0), 0) / departmentCompletionData.length).toFixed(2))
+    : 0;
+  const averageQuarterProgress = quarterTrendData.length
+    ? Number((quarterTrendData.reduce((sum, item) => sum + Number(item.averageProgress || 0), 0) / quarterTrendData.length).toFixed(2))
+    : 0;
+  const averageManagerRate = managerCompletionData.length
+    ? Number((managerCompletionData.reduce((sum, item) => sum + Number(item.completionRate || 0), 0) / managerCompletionData.length).toFixed(2))
+    : 0;
+
+  const handleEscalationAction = async (item, action) => {
+    try {
+      const response = await api.post(`/admin/escalations/${item.type}/${item.id}/${action}`, {
+        remarks: `${action} created from the admin dashboard`,
+      });
+      setMessage(`${response.data.message}. Audit log updated`);
+      await loadData();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Unable to update escalation queue');
+    }
+  };
+
   const downloadReport = async (format) => {
     try {
       const endpoint =
@@ -219,9 +252,12 @@ function AdminDashboard() {
           <p className="kicker">Admin / HR Dashboard</p>
           <h2>{user.name}</h2>
         </div>
-        <button className="ghost" type="button" onClick={logout}>
-          Logout
-        </button>
+        <div className="action-row">
+          <NotificationCenter />
+          <button className="ghost" type="button" onClick={logout}>
+            Logout
+          </button>
+        </div>
       </header>
 
       {message ? <p className="ok">{message}</p> : null}
@@ -493,6 +529,212 @@ function AdminDashboard() {
 
       <section className="panel">
         <div className="section-heading">
+          <p className="kicker">Bonus Features</p>
+          <h3>Advanced analytics</h3>
+          <p className="section-help">Department-wise completion rate, quarter progress trend, manager check-in completion rate, and thrust area distribution are shown using the current demo data.</p>
+        </div>
+        <div className="bonus-grid">
+          <article>
+            <p>Departments tracked</p>
+            <h4>{departmentCompletionData.length}</h4>
+            <span>Bonus Feature</span>
+          </article>
+          <article>
+            <p>Average department completion</p>
+            <h4>{averageDepartmentRate}%</h4>
+            <span>Bonus Feature</span>
+          </article>
+          <article>
+            <p>Average quarter progress</p>
+            <h4>{averageQuarterProgress}%</h4>
+            <span>Bonus Feature</span>
+          </article>
+          <article>
+            <p>Manager check-in rate</p>
+            <h4>{averageManagerRate}%</h4>
+            <span>Bonus Feature</span>
+          </article>
+        </div>
+
+        <div className="chart-grid">
+          <div>
+            <div className="section-heading">
+              <p className="kicker">Bonus Feature</p>
+              <h3>Department completion rate</h3>
+            </div>
+            <div className="chart-box">
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={departmentCompletionData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="department" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="completionRate" fill="#0f766e" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div>
+            <div className="section-heading">
+              <p className="kicker">Bonus Feature</p>
+              <h3>Quarter-wise progress trend</h3>
+            </div>
+            <div className="chart-box">
+              <ResponsiveContainer width="100%" height={260}>
+                <LineChart data={quarterTrendData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="quarter" />
+                  <YAxis />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="averageProgress" stroke="#b45309" strokeWidth={3} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div>
+            <div className="section-heading">
+              <p className="kicker">Bonus Feature</p>
+              <h3>Manager check-in completion</h3>
+            </div>
+            <div className="chart-box">
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={managerCompletionData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="managerName" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="completionRate" fill="#16a34a" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div>
+            <div className="section-heading">
+              <p className="kicker">Bonus Feature</p>
+              <h3>Goal distribution by thrust area</h3>
+            </div>
+            <div className="chart-box">
+              <ResponsiveContainer width="100%" height={260}>
+                <PieChart>
+                  <Pie data={thrustAreaData} dataKey="value" nameKey="name" outerRadius={90}>
+                    {thrustAreaData.map((entry, index) => (
+                      <Cell key={entry.name} fill={statusColors[index % statusColors.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="panel">
+        <div className="section-heading">
+          <p className="kicker">Escalation & Reminders</p>
+          <h3>Bonus operations center</h3>
+          <p className="section-help">Send reminders, escalate items to HR, or mark items resolved without altering the core approval workflow.</p>
+        </div>
+
+        <div className="bonus-grid">
+          <article>
+            <p>Pending goal submissions</p>
+            <h4>{escalationQueues.pendingGoalSubmissions.length}</h4>
+            <span>Bonus Feature</span>
+          </article>
+          <article>
+            <p>Pending manager approvals</p>
+            <h4>{escalationQueues.pendingManagerApprovals.length}</h4>
+            <span>Bonus Feature</span>
+          </article>
+          <article>
+            <p>Pending quarterly check-ins</p>
+            <h4>{escalationQueues.pendingQuarterlyCheckIns.length}</h4>
+            <span>Bonus Feature</span>
+          </article>
+        </div>
+
+        <div className="chart-grid">
+          <div>
+            <div className="section-heading">
+              <p className="kicker">Pending goal submissions</p>
+              <h3>Employee reminders</h3>
+            </div>
+            <div className="queue-list">
+              {escalationQueues.pendingGoalSubmissions.length === 0 ? (
+                <div className="table-empty"><strong>Nothing pending.</strong><span>All draft goal sheets are up to date.</span></div>
+              ) : escalationQueues.pendingGoalSubmissions.map((item) => (
+                <article key={item.id} className="queue-card">
+                  <div>
+                    <h4>{item.title}</h4>
+                    <p>{item.employeeName} · {item.managerName}</p>
+                  </div>
+                  <div className="action-row">
+                    <button type="button" className="ghost button-sm" onClick={() => handleEscalationAction(item, 'send-reminder')}>Send Reminder</button>
+                    <button type="button" className="ghost button-sm" onClick={() => handleEscalationAction(item, 'escalate-hr')}>Escalate to HR</button>
+                    <button type="button" className="ghost button-sm" onClick={() => handleEscalationAction(item, 'mark-resolved')}>Mark Resolved</button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="section-heading">
+              <p className="kicker">Pending manager approvals</p>
+              <h3>Approval reminders</h3>
+            </div>
+            <div className="queue-list">
+              {escalationQueues.pendingManagerApprovals.length === 0 ? (
+                <div className="table-empty"><strong>Nothing pending.</strong><span>All submitted goals are already reviewed.</span></div>
+              ) : escalationQueues.pendingManagerApprovals.map((item) => (
+                <article key={item.id} className="queue-card">
+                  <div>
+                    <h4>{item.title}</h4>
+                    <p>{item.employeeName} · {item.managerName}</p>
+                  </div>
+                  <div className="action-row">
+                    <button type="button" className="ghost button-sm" onClick={() => handleEscalationAction(item, 'send-reminder')}>Send Reminder</button>
+                    <button type="button" className="ghost button-sm" onClick={() => handleEscalationAction(item, 'escalate-hr')}>Escalate to HR</button>
+                    <button type="button" className="ghost button-sm" onClick={() => handleEscalationAction(item, 'mark-resolved')}>Mark Resolved</button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="section-heading">
+              <p className="kicker">Pending quarterly check-ins</p>
+              <h3>Quarterly follow-ups</h3>
+            </div>
+            <div className="queue-list">
+              {escalationQueues.pendingQuarterlyCheckIns.length === 0 ? (
+                <div className="table-empty"><strong>Nothing pending.</strong><span>All approved goals have their quarterly updates.</span></div>
+              ) : escalationQueues.pendingQuarterlyCheckIns.map((item) => (
+                <article key={item.id} className="queue-card">
+                  <div>
+                    <h4>{item.title}</h4>
+                    <p>{item.employeeName} · Missing {item.remainingQuarters.join(', ')}</p>
+                  </div>
+                  <div className="action-row">
+                    <button type="button" className="ghost button-sm" onClick={() => handleEscalationAction(item, 'send-reminder')}>Send Reminder</button>
+                    <button type="button" className="ghost button-sm" onClick={() => handleEscalationAction(item, 'escalate-hr')}>Escalate to HR</button>
+                    <button type="button" className="ghost button-sm" onClick={() => handleEscalationAction(item, 'mark-resolved')}>Mark Resolved</button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="panel">
+        <div className="section-heading">
           <p className="kicker">Users</p>
           <h3>User Management</h3>
           <p className="section-help">Create users, assign reporting lines, and review the current organization list.</p>
@@ -547,6 +789,7 @@ function AdminDashboard() {
             </select>
           </label>
           <button className="primary" type="submit">Create User</button>
+          <p className="section-help full">Default password for new users: Pass@123</p>
         </form>
 
         <div className="table-wrap">

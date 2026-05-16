@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
+import Modal from '../components/Modal';
+import NotificationCenter from '../components/NotificationCenter';
 import Toast from '../components/Toast';
 
 const initialForm = {
@@ -11,6 +13,54 @@ const initialForm = {
   goalType: 'Min',
   target: '',
   weightage: '',
+};
+
+const smartSuggestions = {
+  sales: {
+    thrustArea: 'Revenue Growth',
+    title: 'Improve qualified pipeline conversion',
+    description: 'Build a healthier sales funnel by focusing on lead qualification and opportunity progression.',
+    uomType: 'Percentage',
+    goalType: 'Max',
+    target: '20',
+    weightage: '20',
+  },
+  support: {
+    thrustArea: 'Customer Support',
+    title: 'Reduce average ticket resolution time',
+    description: 'Strengthen response quality and handling speed to improve customer satisfaction.',
+    uomType: 'Numeric',
+    goalType: 'Min',
+    target: '4',
+    weightage: '20',
+  },
+  engineering: {
+    thrustArea: 'Delivery Excellence',
+    title: 'Improve sprint delivery predictability',
+    description: 'Deliver planned sprint commitments consistently while reducing unplanned spillover work.',
+    uomType: 'Percentage',
+    goalType: 'Max',
+    target: '95',
+    weightage: '20',
+  },
+  hr: {
+    thrustArea: 'Employee Experience',
+    title: 'Improve onboarding completion quality',
+    description: 'Create a smoother onboarding experience with faster completion of required actions and feedback.',
+    uomType: 'Percentage',
+    goalType: 'Max',
+    target: '98',
+    weightage: '20',
+  },
+  default: {
+    thrustArea: 'Operational Excellence',
+    title: 'Strengthen role-based delivery outcomes',
+    description: 'Create a measurable goal that improves accountability, consistency, and performance quality.',
+    uomType: 'Percentage',
+    goalType: 'Max',
+    target: '90',
+    weightage: '20',
+  },
 };
 
 function EmployeeDashboard() {
@@ -31,6 +81,7 @@ function EmployeeDashboard() {
     status: 'On Track',
     employeeComment: '',
   });
+  const [editGoalModal, setEditGoalModal] = useState(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -39,9 +90,9 @@ function EmployeeDashboard() {
         api.get('/employee/goals'),
         api.get('/employee/checkins'),
       ]);
-      setGoals(goalRes.data.goals);
+      setGoals(goalRes.data.goals || []);
       setRules(goalRes.data.rules || { canEditGoals: true, goalSettingMessage: '' });
-      setCheckIns(checkInRes.data.checkIns);
+      setCheckIns(checkInRes.data.checkIns || []);
       setError('');
     } catch (err) {
       setError(err.response?.data?.message || 'Unable to load employee dashboard');
@@ -70,12 +121,27 @@ function EmployeeDashboard() {
 
   const lockedGoals = goals.filter((goal) => goal.isLocked).length;
   const openGoals = goals.length - lockedGoals;
+  const departmentKey = String(user?.department || '').toLowerCase();
+  const suggestionTemplate = smartSuggestions[departmentKey] || smartSuggestions.default;
 
   const badgeClass = (value) => `status-chip status-${String(value).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 
   const logout = () => {
     localStorage.clear();
     navigate('/');
+  };
+
+  const applySmartSuggestion = () => {
+    if (!rules.canEditGoals) {
+      setError(rules.goalSettingMessage || 'Goal setting window is closed');
+      return;
+    }
+
+    setGoalForm((current) => ({
+      ...current,
+      ...suggestionTemplate,
+    }));
+    setMessage(`Smart suggestion applied for ${user?.department || 'your department'}`);
   };
 
   const createGoal = async (e) => {
@@ -132,32 +198,36 @@ function EmployeeDashboard() {
     }
   };
 
-  const editGoal = async (goal) => {
+  const openEditModal = (goal) => {
+    setEditGoalModal({
+      goal,
+      title: goal.title,
+      target: goal.target,
+      weightage: goal.weightage,
+    });
+  };
+
+  const saveEditedGoal = async (e) => {
+    e.preventDefault();
     if (!rules.canEditGoals) {
       setError(rules.goalSettingMessage || 'Goal editing window is closed');
       return;
     }
 
-    let payload;
-    if (goal.isShared) {
-      const weightageInput = window.prompt('Shared goal: only weightage can be edited', String(goal.weightage));
-      if (!weightageInput) return;
-      payload = { weightage: Number(weightageInput) };
-    } else {
-      const title = window.prompt('Edit goal title', goal.title);
-      if (!title) return;
-      const target = window.prompt('Edit target', String(goal.target));
-      const weightage = window.prompt('Edit weightage', String(goal.weightage));
-      payload = {
-        title,
-        target: goal.uomType === 'Timeline' ? target : Number(target),
-        weightage: Number(weightage),
-      };
-    }
+    if (!editGoalModal) return;
 
     try {
-      await api.put(`/employee/goals/${goal.goalId}`, payload);
+      const payload = editGoalModal.goal.isShared
+        ? { weightage: Number(editGoalModal.weightage) }
+        : {
+            title: editGoalModal.title,
+            target: editGoalModal.goal.uomType === 'Timeline' ? editGoalModal.target : Number(editGoalModal.target),
+            weightage: Number(editGoalModal.weightage),
+          };
+
+      await api.put(`/employee/goals/${editGoalModal.goal.goalId}`, payload);
       setMessage('Goal updated successfully');
+      setEditGoalModal(null);
       await loadData();
     } catch (err) {
       setError(err.response?.data?.message || 'Unable to update goal');
@@ -171,17 +241,80 @@ function EmployeeDashboard() {
           <p className="kicker">Employee Dashboard</p>
           <h2>{user.name}</h2>
         </div>
-        <button className="ghost" type="button" onClick={logout}>
-          Logout
-        </button>
+        <div className="action-row">
+          <NotificationCenter />
+          <button className="ghost" type="button" onClick={logout}>
+            Logout
+          </button>
+        </div>
       </header>
 
-      {message ? <p className="ok">{message}</p> : null}
       {message ? (
-        <div className="toast-anchor"><Toast tone="success" title="Success" message={message} onClose={() => setMessage('')} /></div>
+        <div className="toast-anchor">
+          <Toast tone="success" title="Success" message={message} onClose={() => setMessage('')} />
+        </div>
       ) : null}
       {error ? (
-        <div className="toast-anchor"><Toast tone="error" title="Action failed" message={error} onClose={() => setError('')} /></div>
+        <div className="toast-anchor">
+          <Toast tone="error" title="Action failed" message={error} onClose={() => setError('')} />
+        </div>
+      ) : null}
+
+      {editGoalModal ? (
+        <Modal
+          kicker={editGoalModal.goal.isShared ? 'Edit Shared Goal' : 'Edit Goal'}
+          title={editGoalModal.goal.title}
+          description={editGoalModal.goal.isShared ? 'Only weightage can be changed for shared goals.' : 'Update the editable draft goal fields and keep the weightage within policy.'}
+          onClose={() => setEditGoalModal(null)}
+          className="modal-card-wide"
+        >
+          <form className="grid-form two-col" onSubmit={saveEditedGoal}>
+            {editGoalModal.goal.isShared ? (
+              <div className="full modal-multiselect">
+                <p className="field-label">Shared Goal</p>
+                <p className="section-help">Title, target, and description remain locked for shared KPIs.</p>
+              </div>
+            ) : (
+              <>
+                <label className="full">
+                  Goal Title
+                  <input
+                    value={editGoalModal.title}
+                    onChange={(event) => setEditGoalModal((current) => ({ ...current, title: event.target.value }))}
+                    required
+                  />
+                </label>
+                <label>
+                  Target
+                  <input
+                    type={editGoalModal.goal.uomType === 'Timeline' ? 'date' : 'number'}
+                    value={editGoalModal.target}
+                    onChange={(event) => setEditGoalModal((current) => ({ ...current, target: event.target.value }))}
+                    required
+                  />
+                </label>
+              </>
+            )}
+            <label>
+              Weightage %
+              <input
+                type="number"
+                min="10"
+                value={editGoalModal.weightage}
+                onChange={(event) => setEditGoalModal((current) => ({ ...current, weightage: event.target.value }))}
+                required
+              />
+            </label>
+            <div className="full button-row-spread">
+              <button className="ghost" type="button" onClick={() => setEditGoalModal(null)}>
+                Cancel
+              </button>
+              <button className="primary" type="submit">
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </Modal>
       ) : null}
 
       <section className="panel panel-compact">
@@ -208,6 +341,20 @@ function EmployeeDashboard() {
             <h4>{checkIns.length}</h4>
           </article>
         </div>
+      </section>
+
+      <section className="panel">
+        <div className="section-heading-row">
+          <div className="section-heading-inline">
+            <p className="kicker">Bonus Features</p>
+            <h3>Smart goal suggestion</h3>
+            <p className="section-help">Use the department-aware suggestion to draft a professional goal faster.</p>
+          </div>
+          <button className="ghost button-lg" type="button" onClick={applySmartSuggestion}>
+            Smart Goal Suggestion
+          </button>
+        </div>
+        <div className="demo-badge">Bonus Feature</div>
       </section>
 
       <section className="panel">
@@ -338,25 +485,26 @@ function EmployeeDashboard() {
                 </tr>
               ) : (
                 goals.map((goal) => (
-                <tr key={goal.goalId}>
-                  <td>{goal.title}</td>
-                  <td>{goal.uomType}</td>
-                  <td>{goal.goalType}</td>
-                  <td>{String(goal.target)}</td>
-                  <td>{goal.weightage}%</td>
-                  <td><span className={badgeClass(goal.approvalStatus)}>{goal.approvalStatus}</span></td>
-                  <td><span className={goal.isLocked ? 'status-chip status-locked' : 'status-chip status-open'}>{goal.isLocked ? 'Locked' : 'Open'}</span></td>
-                  <td>
-                    {!goal.isLocked ? (
-                      <button className="ghost button-sm" type="button" onClick={() => editGoal(goal)}>
-                        {goal.isShared ? 'Edit Weightage' : 'Edit'}
-                      </button>
-                    ) : (
-                      '-'
-                    )}
-                  </td>
-                </tr>
-              ))) }
+                  <tr key={goal.goalId}>
+                    <td>{goal.title}</td>
+                    <td>{goal.uomType}</td>
+                    <td>{goal.goalType}</td>
+                    <td>{String(goal.target)}</td>
+                    <td>{goal.weightage}%</td>
+                    <td><span className={badgeClass(goal.approvalStatus)}>{goal.approvalStatus}</span></td>
+                    <td><span className={goal.isLocked ? 'status-chip status-locked' : 'status-chip status-open'}>{goal.isLocked ? 'Locked' : 'Open'}</span></td>
+                    <td>
+                      {!goal.isLocked ? (
+                        <button className="ghost button-sm" type="button" onClick={() => openEditModal(goal)}>
+                          {goal.isShared ? 'Edit Weightage' : 'Edit'}
+                        </button>
+                      ) : (
+                        '-'
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -461,16 +609,17 @@ function EmployeeDashboard() {
                 </tr>
               ) : (
                 checkIns.map((item) => (
-                <tr key={item.checkInId}>
-                  <td>{item.quarter}</td>
-                  <td>{item.goalId.slice(0, 8)}</td>
-                  <td>{item.plannedTarget}</td>
-                  <td>{item.actualAchievement}</td>
-                  <td><span className="status-chip status-primary">{item.progressScore}%</span></td>
-                  <td><span className={badgeClass(item.status)}>{item.status}</span></td>
-                  <td>{item.managerComment || '-'}</td>
-                </tr>
-              ))) }
+                  <tr key={item.checkInId}>
+                    <td>{item.quarter}</td>
+                    <td>{item.goalId.slice(0, 8)}</td>
+                    <td>{item.plannedTarget}</td>
+                    <td>{item.actualAchievement}</td>
+                    <td><span className="status-chip status-primary">{item.progressScore}%</span></td>
+                    <td><span className={badgeClass(item.status)}>{item.status}</span></td>
+                    <td>{item.managerComment || '-'}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

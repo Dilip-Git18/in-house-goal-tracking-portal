@@ -667,6 +667,18 @@ tbody tr:hover {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
 }
 
+.modal-body {
+  display: grid;
+  gap: 12px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
 .modal-card-wide {
   width: min(900px, 100%);
 }
@@ -730,6 +742,175 @@ tbody tr:hover {
   gap: 10px;
 }
 
+.link-btn {
+  min-width: 190px;
+}
+
+.notification-center {
+  position: relative;
+}
+
+.notification-bell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notification-count {
+  display: inline-flex;
+  min-width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--primary-ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.notification-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  z-index: 30;
+  width: min(420px, calc(100vw - 32px));
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: var(--shadow-hover);
+  padding: 14px;
+}
+
+.notification-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.notification-list {
+  display: grid;
+  gap: 10px;
+  max-height: 440px;
+  overflow: auto;
+}
+
+.notification-item {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(244, 239, 230, 0.5);
+  padding: 12px;
+}
+
+.notification-unread {
+  border-color: rgba(15, 118, 110, 0.28);
+  background: rgba(15, 118, 110, 0.08);
+}
+
+.notification-item-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.notification-item-top h5 {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+
+.notification-item-top p {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.notification-item-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.notification-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--primary);
+  box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.12);
+}
+
+.bonus-grid,
+.bonus-queue-grid {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.bonus-queue-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.bonus-card,
+.queue-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.74);
+  padding: 14px;
+  box-shadow: 0 10px 18px rgba(61, 40, 15, 0.04);
+}
+
+.bonus-card p,
+.queue-card p {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.bonus-card h4,
+.queue-card h4 {
+  margin-top: 8px;
+  font-size: 16px;
+}
+
+.bonus-card span {
+  display: inline-block;
+  margin-top: 6px;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.bonus-list,
+.queue-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.bonus-list-item {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid rgba(217, 207, 192, 0.65);
+  padding-top: 10px;
+}
+
+.bonus-list-item strong {
+  display: block;
+  font-size: 14px;
+}
+
+.bonus-list-item span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
 @keyframes fadeSlide {
   from {
     opacity: 0;
@@ -767,7 +948,9 @@ tbody tr:hover {
   .metrics-grid-compact,
   .feature-grid,
   .cycle-grid,
-  .checkbox-grid {
+  .checkbox-grid,
+  .bonus-grid,
+  .bonus-queue-grid {
     grid-template-columns: 1fr;
   }
 
@@ -788,5 +971,10 @@ tbody tr:hover {
   .audit-filter-row label {
     width: 100%;
     min-width: 0;
+  }
+
+  .notification-panel {
+    right: auto;
+    left: 0;
   }
 }
