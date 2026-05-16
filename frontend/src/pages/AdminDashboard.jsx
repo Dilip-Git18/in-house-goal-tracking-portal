@@ -1,9 +1,31 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import api from '../api';
 
 const statusColors = ['#0f766e', '#f59e0b', '#16a34a', '#b91c1c'];
+const cycleLabels = {
+  goalSettingOpenDate: 'Goal Setting Opens',
+  goalSettingCloseDate: 'Goal Setting Closes',
+  q1OpenDate: 'Q1 Open',
+  q2OpenDate: 'Q2 Open',
+  q3OpenDate: 'Q3 Open',
+  q4OpenDate: 'Q4 Open',
+};
+
+const modalInitial = {
+  unlockGoalId: '',
+  unlockRemarks: '',
+  sharedTitle: '',
+  sharedDescription: '',
+  sharedThrustArea: '',
+  sharedTarget: '',
+  sharedUomType: 'Percentage',
+  sharedGoalType: 'Min',
+  sharedDepartment: '',
+  sharedAssignedEmployees: [],
+  sharedPrimaryOwnerId: '',
+};
 
 function AdminDashboard() {
   const navigate = useNavigate();
@@ -11,6 +33,7 @@ function AdminDashboard() {
   const [dashboard, setDashboard] = useState(null);
   const [users, setUsers] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
+  const [auditEntityFilter, setAuditEntityFilter] = useState('All');
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
@@ -18,8 +41,10 @@ function AdminDashboard() {
     role: 'employee',
     department: '',
     designation: '',
-    managerId: 'mgr_001',
+    managerId: '',
   });
+  const [modalForm, setModalForm] = useState(modalInitial);
+  const [activeModal, setActiveModal] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -60,7 +85,7 @@ function AdminDashboard() {
         role: 'employee',
         department: '',
         designation: '',
-        managerId: 'mgr_001',
+        managerId: '',
       });
       await loadData();
     } catch (err) {
@@ -68,46 +93,74 @@ function AdminDashboard() {
     }
   };
 
-  const unlockGoal = async () => {
-    const goalId = window.prompt('Enter goal ID to unlock');
-    const remarks = window.prompt('Enter remarks for unlock action') || '';
-    if (!goalId) return;
+  const closeModal = () => {
+    setActiveModal('');
+    setModalForm(modalInitial);
+  };
+
+  const openUnlockModal = () => setActiveModal('unlock');
+  const openSharedModal = () => setActiveModal('shared');
+
+  const unlockGoal = async (e) => {
+    e.preventDefault();
+    if (!modalForm.unlockGoalId || !modalForm.unlockRemarks) return;
 
     try {
-      await api.post(`/admin/goals/${goalId}/unlock`, { remarks });
+      await api.post(`/admin/goals/${modalForm.unlockGoalId}/unlock`, { remarks: modalForm.unlockRemarks });
       setMessage('Goal unlocked');
+      closeModal();
       await loadData();
     } catch (err) {
       setError(err.response?.data?.message || 'Unable to unlock goal');
     }
   };
 
-  const pushSharedGoal = async () => {
-    const title = window.prompt('Shared goal title');
-    if (!title) return;
+  const pushSharedGoal = async (e) => {
+    e.preventDefault();
+    if (
+      !modalForm.sharedTitle ||
+      !modalForm.sharedThrustArea ||
+      !modalForm.sharedTarget ||
+      !modalForm.sharedDepartment ||
+      modalForm.sharedAssignedEmployees.length === 0
+    ) {
+      return;
+    }
 
     try {
       await api.post('/admin/shared-goals/push', {
-        title,
-        description: 'Department KPI pushed from admin dashboard',
-        thrustArea: 'Operational Excellence',
-        target: 90,
-        uomType: 'Percentage',
-        goalType: 'Min',
-        department: 'Sales',
-        assignedEmployees: users.filter((u) => u.role === 'employee').map((u) => u.userId),
+        title: modalForm.sharedTitle,
+        description: modalForm.sharedDescription,
+        thrustArea: modalForm.sharedThrustArea,
+        target: Number(modalForm.sharedTarget),
+        uomType: modalForm.sharedUomType,
+        goalType: modalForm.sharedGoalType,
+        department: modalForm.sharedDepartment,
+        assignedEmployees: modalForm.sharedAssignedEmployees,
+        primaryOwnerId: modalForm.sharedPrimaryOwnerId || modalForm.sharedAssignedEmployees[0],
       });
       setMessage('Shared goal pushed to employees');
+      closeModal();
       await loadData();
     } catch (err) {
       setError(err.response?.data?.message || 'Unable to push shared goal');
     }
   };
 
+  const managerOptions = useMemo(() => users.filter((item) => item.role === 'manager' && item.isActive !== false), [users]);
+  const employeeOptions = useMemo(() => users.filter((item) => item.role === 'employee' && item.isActive !== false), [users]);
+
   const statusData = useMemo(() => {
     if (!dashboard) return [];
     return Object.entries(dashboard.statusCount).map(([name, value]) => ({ name, value }));
   }, [dashboard]);
+
+  const filteredAuditLogs = useMemo(() => {
+    if (auditEntityFilter === 'All') return auditLogs;
+    return auditLogs.filter((log) => log.entityType === auditEntityFilter);
+  }, [auditLogs, auditEntityFilter]);
+
+  const getUserName = (userId) => users.find((item) => item.userId === userId)?.name || userId || '-';
 
   const downloadReport = async (format) => {
     try {
@@ -130,6 +183,18 @@ function AdminDashboard() {
     }
   };
 
+  const toggleEmployeeSelection = (employeeId) => {
+    setModalForm((prev) => {
+      const exists = prev.sharedAssignedEmployees.includes(employeeId);
+      return {
+        ...prev,
+        sharedAssignedEmployees: exists
+          ? prev.sharedAssignedEmployees.filter((item) => item !== employeeId)
+          : [...prev.sharedAssignedEmployees, employeeId],
+      };
+    });
+  };
+
   return (
     <div className="page">
       <header className="topbar">
@@ -145,12 +210,153 @@ function AdminDashboard() {
       {message ? <p className="ok">{message}</p> : null}
       {error ? <p className="error">{error}</p> : null}
 
+      {activeModal === 'unlock' ? (
+        <div className="modal-backdrop" onClick={closeModal} role="presentation">
+          <div className="modal-card" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true">
+            <div className="modal-header">
+              <div>
+                <p className="kicker">Unlock Goal</p>
+                <h3>Unlock goal for exception handling</h3>
+              </div>
+              <button type="button" className="ghost" onClick={closeModal}>Close</button>
+            </div>
+            <form className="grid-form" onSubmit={unlockGoal}>
+              <label>
+                Goal ID
+                <input
+                  value={modalForm.unlockGoalId}
+                  onChange={(e) => setModalForm((prev) => ({ ...prev, unlockGoalId: e.target.value }))}
+                  required
+                />
+              </label>
+              <label>
+                Remarks
+                <textarea
+                  value={modalForm.unlockRemarks}
+                  onChange={(e) => setModalForm((prev) => ({ ...prev, unlockRemarks: e.target.value }))}
+                  required
+                />
+              </label>
+              <button className="primary" type="submit">Unlock Goal</button>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
+      {activeModal === 'shared' ? (
+        <div className="modal-backdrop" onClick={closeModal} role="presentation">
+          <div className="modal-card modal-card-wide" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true">
+            <div className="modal-header">
+              <div>
+                <p className="kicker">Push Shared KPI</p>
+                <h3>Create and assign a shared goal</h3>
+              </div>
+              <button type="button" className="ghost" onClick={closeModal}>Close</button>
+            </div>
+            <form className="grid-form two-col" onSubmit={pushSharedGoal}>
+              <label className="full">
+                Title
+                <input
+                  value={modalForm.sharedTitle}
+                  onChange={(e) => setModalForm((prev) => ({ ...prev, sharedTitle: e.target.value }))}
+                  required
+                />
+              </label>
+              <label className="full">
+                Description
+                <textarea
+                  value={modalForm.sharedDescription}
+                  onChange={(e) => setModalForm((prev) => ({ ...prev, sharedDescription: e.target.value }))}
+                />
+              </label>
+              <label>
+                Thrust Area
+                <input
+                  value={modalForm.sharedThrustArea}
+                  onChange={(e) => setModalForm((prev) => ({ ...prev, sharedThrustArea: e.target.value }))}
+                  required
+                />
+              </label>
+              <label>
+                Target
+                <input
+                  type="number"
+                  value={modalForm.sharedTarget}
+                  onChange={(e) => setModalForm((prev) => ({ ...prev, sharedTarget: e.target.value }))}
+                  required
+                />
+              </label>
+              <label>
+                UoM Type
+                <select
+                  value={modalForm.sharedUomType}
+                  onChange={(e) => setModalForm((prev) => ({ ...prev, sharedUomType: e.target.value }))}
+                >
+                  <option>Numeric</option>
+                  <option>Percentage</option>
+                  <option>Timeline</option>
+                  <option>Zero-based</option>
+                </select>
+              </label>
+              <label>
+                Goal Type
+                <select
+                  value={modalForm.sharedGoalType}
+                  onChange={(e) => setModalForm((prev) => ({ ...prev, sharedGoalType: e.target.value }))}
+                >
+                  <option>Min</option>
+                  <option>Max</option>
+                  <option>Timeline</option>
+                  <option>Zero</option>
+                </select>
+              </label>
+              <label>
+                Department
+                <input
+                  value={modalForm.sharedDepartment}
+                  onChange={(e) => setModalForm((prev) => ({ ...prev, sharedDepartment: e.target.value }))}
+                  required
+                />
+              </label>
+              <label>
+                Primary Owner
+                <select
+                  value={modalForm.sharedPrimaryOwnerId}
+                  onChange={(e) => setModalForm((prev) => ({ ...prev, sharedPrimaryOwnerId: e.target.value }))}
+                >
+                  <option value="">Auto select first employee</option>
+                  {employeeOptions.map((employee) => (
+                    <option key={employee.userId} value={employee.userId}>{employee.name}</option>
+                  ))}
+                </select>
+              </label>
+              <div className="full modal-multiselect">
+                <p className="field-label">Assign Employees</p>
+                <div className="checkbox-grid">
+                  {employeeOptions.map((employee) => (
+                    <label key={employee.userId} className="checkbox-item">
+                      <input
+                        type="checkbox"
+                        checked={modalForm.sharedAssignedEmployees.includes(employee.userId)}
+                        onChange={() => toggleEmployeeSelection(employee.userId)}
+                      />
+                      <span>{employee.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <button className="primary full" type="submit">Push Shared KPI</button>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
       <section className="panel">
         <div className="row-between">
           <h3>Completion Dashboard</h3>
           <div className="action-row">
-            <button className="ghost" onClick={unlockGoal}>Unlock Goal</button>
-            <button className="ghost" onClick={pushSharedGoal}>Push Shared KPI</button>
+            <button type="button" className="ghost" onClick={openUnlockModal}>Unlock Goal</button>
+            <button type="button" className="ghost" onClick={openSharedModal}>Push Shared KPI</button>
           </div>
         </div>
 
@@ -176,6 +382,29 @@ function AdminDashboard() {
         ) : null}
       </section>
 
+      <section className="panel">
+        <h3>Goal Cycle</h3>
+        {dashboard?.currentCycle ? (
+          <div className="cycle-grid">
+            <article>
+              <p>Active Cycle</p>
+              <h4>{dashboard.currentCycle.cycleName}</h4>
+              <span>{dashboard.currentCycle.year}</span>
+            </article>
+            <article>
+              <p>Goal Setting Window</p>
+              <h4>{dashboard.currentCycle.goalSettingOpenDate} to {dashboard.currentCycle.goalSettingCloseDate}</h4>
+            </article>
+            {Object.entries(cycleLabels).map(([key, label]) => (
+              <article key={key}>
+                <p>{label}</p>
+                <h4>{dashboard.currentCycle[key]}</h4>
+              </article>
+            ))}
+          </div>
+        ) : null}
+      </section>
+
       <section className="panel chart-grid">
         <div>
           <h3>Goal Status Mix</h3>
@@ -188,8 +417,17 @@ function AdminDashboard() {
                   ))}
                 </Pie>
                 <Tooltip />
+                <Legend />
               </PieChart>
             </ResponsiveContainer>
+          </div>
+          <div className="legend-chip-row">
+            {['draft', 'submitted', 'approved', 'rework'].map((status, index) => (
+              <span key={status} className="legend-chip">
+                <span className="legend-dot" style={{ backgroundColor: statusColors[index] }} />
+                {status}
+              </span>
+            ))}
           </div>
         </div>
 
@@ -204,8 +442,13 @@ function AdminDashboard() {
                 <Tooltip />
                 <Bar dataKey="completed" fill="#0f766e" />
                 <Bar dataKey="pending" fill="#f59e0b" />
+                <Legend />
               </BarChart>
             </ResponsiveContainer>
+          </div>
+          <div className="legend-chip-row">
+            <span className="legend-chip"><span className="legend-dot" style={{ backgroundColor: '#0f766e' }} />Completed</span>
+            <span className="legend-chip"><span className="legend-dot" style={{ backgroundColor: '#f59e0b' }} />Pending</span>
           </div>
         </div>
       </section>
@@ -247,11 +490,60 @@ function AdminDashboard() {
             <input value={newUser.designation} onChange={(e) => setNewUser((p) => ({ ...p, designation: e.target.value }))} />
           </label>
           <label>
-            Manager ID
-            <input value={newUser.managerId} onChange={(e) => setNewUser((p) => ({ ...p, managerId: e.target.value }))} />
+            Manager
+            <select
+              value={newUser.managerId}
+              onChange={(e) => setNewUser((p) => ({ ...p, managerId: e.target.value }))}
+              required={newUser.role === 'employee'}
+            >
+              <option value="">Select manager</option>
+              {managerOptions.map((manager) => (
+                <option key={manager.userId} value={manager.userId}>
+                  {manager.name} ({manager.department || 'No Department'})
+                </option>
+              ))}
+            </select>
           </label>
           <button className="primary" type="submit">Create User</button>
         </form>
+
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Department</th>
+                <th>Manager</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((item) => (
+                <tr key={item.userId}>
+                  <td>{item.name}</td>
+                  <td>{item.email}</td>
+                  <td>{item.role}</td>
+                  <td>{item.department || '-'}</td>
+                  <td>{getUserName(item.managerId)}</td>
+                  <td>{item.isActive ? 'Active' : 'Inactive'}</td>
+                  <td>
+                    <div className="action-row">
+                      <button type="button" className="ghost" onClick={() => navigator.clipboard.writeText(item.email)}>
+                        Copy Email
+                      </button>
+                      <button type="button" className="ghost" onClick={() => navigator.clipboard.writeText(item.userId)}>
+                        Copy ID
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section className="panel">
@@ -269,6 +561,21 @@ function AdminDashboard() {
             </button>
           </div>
         </div>
+
+        <div className="audit-filter-row">
+          <label>
+            Filter by Entity Type
+            <select value={auditEntityFilter} onChange={(e) => setAuditEntityFilter(e.target.value)}>
+              <option value="All">All</option>
+              <option value="Goal">Goal</option>
+              <option value="CheckIn">CheckIn</option>
+              <option value="User">User</option>
+              <option value="System">System</option>
+              <option value="SharedGoal">SharedGoal</option>
+            </select>
+          </label>
+        </div>
+
         <div className="table-wrap">
           <table>
             <thead>
@@ -281,7 +588,7 @@ function AdminDashboard() {
               </tr>
             </thead>
             <tbody>
-              {auditLogs.slice(0, 20).map((log) => (
+              {filteredAuditLogs.slice(0, 20).map((log) => (
                 <tr key={log.logId}>
                   <td>{new Date(log.timestamp).toLocaleString()}</td>
                   <td>{log.userId}</td>

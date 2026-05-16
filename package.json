@@ -1,0 +1,10 @@
+{
+  "name": "atomgoal-workspace",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev": "sh -c 'cd backend && npm run dev & cd frontend && npm run dev & wait'"
+  }
+}

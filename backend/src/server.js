@@ -187,7 +187,11 @@ async function loadOrSeed(model, seedRows) {
 
 async function initializeDatabase() {
   if (!MONGODB_URI) {
-    console.warn('MONGODB_URI not provided, backend will run in memory mode.');
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('MONGODB_URI is required in production');
+    }
+
+    console.warn('MONGODB_URI not provided, backend will run in memory mode for local development.');
     return;
   }
 
@@ -765,6 +769,7 @@ app.post('/api/manager/checkins/:checkInId/comment', authMiddleware, requireRole
 });
 
 app.get('/api/admin/dashboard', authMiddleware, requireRole('admin'), (_req, res) => {
+  const cycle = activeCycle();
   const totalEmployees = users.filter((u) => u.role === 'employee').length;
   const totalManagers = users.filter((u) => u.role === 'manager').length;
 
@@ -797,6 +802,7 @@ app.get('/api/admin/dashboard', authMiddleware, requireRole('admin'), (_req, res
     },
     statusCount,
     quarterCompletion,
+    currentCycle: cycle,
     recentAuditLogs: auditLogs.slice(0, 20),
   });
 });
