@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
+import ServerStartupNotification from './components/ServerStartupNotification';
 import LoginPage from './pages/LoginPage';
 import EmployeeDashboard from './pages/EmployeeDashboard';
 import ManagerDashboard from './pages/ManagerDashboard';
@@ -8,6 +9,7 @@ import AdminDashboard from './pages/AdminDashboard';
 function App() {
   return (
     <BrowserRouter>
+      <ServerStartupNotification />
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route
